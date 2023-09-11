@@ -1,0 +1,60 @@
+FROM rocker/r-ver:4.3.1
+RUN set - e && \
+    export HTSLIB_version="1.17" && \
+    export DEBIAN_FRONTEND=noninteractive && \
+    apt update && \
+    apt install -y wget curl vim perl-doc python3-dev libpython3-dev python3-testresources git build-essential g++ make automake libbz2-dev xz-utils gcc-multilib apt-utils zlib1g-dev liblzma-dev libncurses5-dev && \
+    curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py && \
+    python3 get-pip.py && \
+    python3 -m pip --no-cache-dir install --upgrade pip setuptools && \
+    python3 -m pip install --upgrade pip && \
+    Rscript -e "install.packages(c('gcmr', 'betareg'), repos='https://cran.ism.ac.jp/')" && \
+    pip3 install pysam numpy scipy lifelines && \
+    pip3 install liqa numpy && \
+    cd /usr/bin/ && \
+    ln -s /usr/bin/python3.8 /usr/bin/python && \
+    cd /opt && \
+    wget https://github.com/samtools/htslib/releases/download/${HTSLIB_version}/htslib-${HTSLIB_version}.tar.bz2 && \
+    tar xf htslib-${HTSLIB_version}.tar.bz2 && cd htslib-${HTSLIB_version} && \
+    autoreconf -i && \
+    ./configure && \
+    make -j 8 && make install && \
+    cd /opt && \
+    wget https://github.com/samtools/bcftools/releases/download/${HTSLIB_version}/bcftools-${HTSLIB_version}.tar.bz2 && \
+    tar xf bcftools-${HTSLIB_version}.tar.bz2 && cd bcftools-${HTSLIB_version} && \
+    autoreconf -i && \
+    ./configure && \
+    make -j 8 && make install && \
+    cd /opt && \
+    wget https://github.com/samtools/samtools/releases/download/${HTSLIB_version}/samtools-${HTSLIB_version}.tar.bz2 && \
+    tar xf samtools-${HTSLIB_version}.tar.bz2 && cd samtools-${HTSLIB_version} && \
+    ./configure && \
+    make -j 8 && make install && \
+    cd /opt && \
+    rm htslib-${HTSLIB_version}.tar.bz2 bcftools-${HTSLIB_version}.tar.bz2 samtools-${HTSLIB_version}.tar.bz2 && \
+    cd /opt && \
+    wget https://github.com/lh3/minimap2/archive/refs/tags/v2.24.tar.gz && \
+    tar xf v2.24.tar.gz && \
+    mv minimap2-2.24 minimap2 && \
+    cd minimap2 && \
+    make -j 8 && \
+    cd /opt && \
+    rm -rf v2.24.tar.bz2 && \
+    Rscript -e "if (!require('BiocManager', quietly = TRUE)) install.packages('BiocManager')" && \
+    Rscript -e "BiocManager::install('Rsubread')" && \
+    git clone -b 1.7 https://github.com/BrooksLabUCSC/flair.git && \
+    mv flair flair_1.7 && \
+    git clone -b 2.0.0 https://github.com/BrooksLabUCSC/flair.git && \
+    mv flair flair_2.0.0 && \
+    chmod +x flair_1.7/bin/flair && \
+    chmod +x flair_2.0.0/bin/flair && \
+    apt remove -y wget curl build-essential gcc-multilib apt-utils zlib1g-dev g++ make automake git && \
+    apt autoremove -y && \
+    apt clean && \
+    rm -rf /var/lib/apt/lists/
+ENV PATH=/opt/flair_1.7/bin:/opt/minimap2:${PATH}
+ENV LD_LIBRARY_PATH=/usr/local/lib:/usr/local/lib/R/lib:${LD_LIBRARY_PATH}
+ENV LANGUAGE=en_US.UTF-8
+ENV LC_ALL=en_US.UTF-8
+ENV LANG=en_US.UTF-8
+ENV LC_TYPE=en_US.UTF-8
